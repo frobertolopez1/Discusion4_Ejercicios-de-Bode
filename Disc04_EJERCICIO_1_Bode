@@ -1,0 +1,71 @@
+% =========================================================================
+% RESOLUCIÓN EJERCICIO 1 - DIAGRAMA DE BODE Y MÁRGENES DE ESTABILIDAD
+% =========================================================================
+clear; clc; close all;
+
+% 1. Definición de constantes y del sistema
+w_z  = 2 * pi * 100e3;
+w_p1 = 2 * pi * 90e3;
+w_p2 = 2 * pi * 140e3;
+
+% Construcción de Numerador y Denominador
+num = 1e8 * [1, w_z];
+den = conv([1, 0], conv([1, w_p1], [1, w_p2]));
+G1 = tf(num, den);
+
+% 2. Generación de Tabla de 20 Valores (80 kHz a 150 kHz)
+f_vec_kHz = linspace(80, 150, 20); % 20 puntos entre 80kHz y 150kHz
+w_vec = 2 * pi * (f_vec_kHz * 1000); % Frecuencia en rad/s
+
+[mag, phase, wout] = bode(G1, w_vec);
+mag_dB = 20 * log10(squeeze(mag));
+phase_deg = squeeze(phase);
+
+fprintf('============================================================\n');
+fprintf(' TABLA DE 20 VALORES (Rango: 80 kHz a 150 kHz)\n');
+fprintf('============================================================\n');
+fprintf(' f (kHz) | w (rad/s)   | Magnitud (dB) | Fase (grados)\n');
+fprintf('------------------------------------------------------------\n');
+for i = 1:length(f_vec_kHz)
+    fprintf(' %6.2f  | %11.1f | %11.2f   | %10.2f\n', ...
+            f_vec_kHz(i), w_vec(i), mag_dB(i), phase_deg(i));
+end
+fprintf('============================================================\n\n');
+
+% 3. Gráfica del Diagrama de Bode
+opts = bodeoptions;
+opts.FreqUnits = 'Hz';
+opts.Grid = 'on';
+opts.Title.String = 'Diagrama de Bode - Ejercicio 1';
+
+figure('Name', 'Diagrama de Bode Ejercicio 1', 'Color', 'w');
+margin(G1, opts);
+
+% 4. Extracción de márgenes y dictamen de estabilidad
+[Gm, Pm, Wcg, Wcp] = margin(G1);
+Gm_dB = 20 * log10(Gm);
+f_pc_Hz = Wcg / (2*pi);
+f_gc_Hz = Wcp / (2*pi);
+
+fprintf('============================================================\n');
+fprintf(' PUNTOS DE CORTE Y MÁRGENES DE ESTABILIDAD\n');
+fprintf('============================================================\n');
+
+if isinf(Gm_dB)
+    fprintf('Corte en -180 deg (w_pc) : No cruza (Inf rad/s)\n');
+else
+    fprintf('Corte en -180 deg (w_pc) : %.4f rad/s (%.4f Hz)\n', Wcg, f_pc_Hz);
+end
+fprintf(' -> Margen de Ganancia   : %.2f dB\n', Gm_dB);
+fprintf('------------------------------------------------------------\n');
+fprintf('Corte en 0 dB (w_gc)     : %.4f rad/s (%.4f Hz)\n', Wcp, f_gc_Hz);
+fprintf(' -> Margen de Fase       : %.2f deg\n', Pm);
+fprintf('============================================================\n');
+
+% 5. Juicio de estabilidad automático
+if (Gm_dB > 0 || isinf(Gm_dB)) && Pm > 0
+    fprintf('JUICIO DE ESTABILIDAD: El sistema es ESTABLE.\n');
+else
+    fprintf('JUICIO DE ESTABILIDAD: El sistema es INESTABLE.\n');
+end
+fprintf('============================================================\n');
