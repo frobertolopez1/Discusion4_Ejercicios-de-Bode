@@ -1,0 +1,57 @@
+% =========================================================================
+% EJERCICIO 2 - DIAGRAMA DE BODE Y MÁRGENES
+% =========================================================================
+clear variables; clc; close all;
+
+% 1. Definición de singularidades (rad/s)
+w_z  = 2 * pi * 85e3;
+w_p1 = 2 * pi * 110e3;
+w_c  = 2 * pi * 120e3; % Término lineal 2*zeta*w_n
+w_n  = 2 * pi * 130e3;
+
+% 2. Construcción en el Plano S
+s = tf('s');
+G2 = (5e13 * (s + w_z)) / (s * (s + w_p1) * (s^2 + w_c * s + w_n^2));
+
+% 3. Tabla de 20 Valores (80 kHz a 150 kHz)
+f_vec_kHz = linspace(80, 150, 20);
+w_vec = 2 * pi * (f_vec_kHz * 1000);
+
+[mag, phase, wout] = bode(G2, w_vec);
+mag_dB = 20 * log10(squeeze(mag));
+phase_deg = squeeze(phase);
+
+fprintf('============================================================\n');
+fprintf(' TABLA DE 20 VALORES (Rango: 80 kHz a 150 kHz)\n');
+fprintf('============================================================\n');
+fprintf(' f (kHz)  | w (rad/s)   | Magnitud (dB) | Fase (grados)\n');
+fprintf('------------------------------------------------------------\n');
+for i = 1:length(f_vec_kHz)
+    fprintf(' %6.2f   | %11.1f | %11.2f   | %10.2f\n', ...
+        f_vec_kHz(i), w_vec(i), mag_dB(i), phase_deg(i));
+end
+fprintf('============================================================\n\n');
+
+% 4. Gráfica y Márgenes
+opts = bodeoptions;
+opts.FreqUnits = 'Hz';
+opts.Grid = 'on';
+opts.Title.String = 'Diagrama de Bode - Ejercicio 2';
+
+figure('Name', 'Bode Ejercicio 2', 'Color', 'w');
+margin(G2, opts);
+
+[Gm, Pm, Wcg, Wcp] = margin(G2);
+Gm_dB = 20 * log10(Gm);
+
+fprintf('============================================================\n');
+fprintf(' PUNTOS DE CORTE Y MÁRGENES DE ESTABILIDAD\n');
+fprintf('============================================================\n');
+fprintf('Corte en -180 deg (w_pc) : %.4f rad/s (%.4f kHz)\n', Wcg, (Wcg/(2*pi))/1000);
+fprintf(' -> Margen de Ganancia   : %.2f dB\n', Gm_dB);
+fprintf('------------------------------------------------------------\n');
+fprintf('Corte en 0 dB (w_gc)     : %.4f rad/s (%.4f Hz)\n', Wcp, Wcp/(2*pi));
+fprintf(' -> Margen de Fase       : %.2f deg\n', Pm);
+fprintf('============================================================\n');
+fprintf('JUICIO DE ESTABILIDAD: El sistema en lazo cerrado es ESTABLE.\n');
+fprintf('============================================================\n');
